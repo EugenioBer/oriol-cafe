@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Oriol Café</title>
+
+<style>
+body{
+  margin:0;
+  font-family:Arial;
+  background:#0E0E0E;
+  color:white;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+}
+.container{width:100%;max-width:400px;padding:20px}
+.screen{display:none}
+.active{display:block}
+button{
+  width:100%;
+  padding:15px;
+  margin-top:10px;
+  border:none;
+  border-radius:10px;
+  background:#C8A27A;
+  color:black;
+  font-weight:bold;
+}
+.card{
+  background:#171717;
+  padding:15px;
+  margin-bottom:10px;
+  border-radius:10px;
+  cursor:pointer;
+}
+input{
+  width:100%;
+  padding:15px;
+  border:none;
+  border-radius:10px;
+  background:#1a1a1a;
+  color:white;
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<!-- NOMBRE -->
+<div class="screen active" id="name">
+  <h1>Oriol Café ☕</h1>
+  <p>¿Cuál es tu nombre?</p>
+  <input id="username" placeholder="Tu nombre">
+  <button onclick="saveName()">Continuar</button>
+</div>
+
+<!-- BEBIDA -->
+<div class="screen" id="menu">
+  <h2>Elige tu bebida</h2>
+  <div class="card" onclick="selectDrink('Latte')">Latte</div>
+  <div class="card" onclick="selectDrink('Iced Latte')">Iced Latte</div>
+  <div class="card" onclick="selectDrink('Cold Brew')">Cold Brew</div>
+  <div class="card" onclick="selectDrink('Espresso')">Espresso</div>
+</div>
+
+<!-- LECHE -->
+<div class="screen" id="milk">
+  <h2>Tipo de leche</h2>
+  <div class="card" onclick="selectMilk('Entera')">Entera</div>
+  <div class="card" onclick="selectMilk('Deslactosada')">Deslactosada</div>
+  <div class="card" onclick="selectMilk('Deslactosada Light')">Deslactosada Light</div>
+  <div class="card" onclick="selectMilk('Avena')">Avena</div>
+  <div class="card" onclick="selectMilk('Coco')">Coco</div>
+</div>
+
+<!-- FINAL -->
+<div class="screen" id="done">
+  <h2>✔ Pedido listo</h2>
+  <p id="summary"></p>
+</div>
+
+</div>
+
+<script>
+let order = {name:"", drink:"", milk:""};
+
+function next(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function saveName(){
+  const name = document.getElementById('username').value;
+  if(!name){alert("Escribe tu nombre");return;}
+  order.name = name;
+  next('menu');
+}
+
+function selectDrink(drink){
+  order.drink = drink;
+  next('milk');
+}
+
+async function selectMilk(milk){
+  order.milk = milk;
+
+  const res = await fetch("https://script.google.com/macros/s/AKfycbx1JAecP-uxlb9NSa-gtZ-3Ns2A4LoowsebK5Hfmpa06HGXlSk0hr3NVucECTVNHXCkIg/exec",{
+    method:"POST",
+    body:JSON.stringify(order)
+  });
+
+  const data = await res.json();
+
+  document.getElementById("summary").innerText =
+    `Pedido #${data.id} - ${order.drink} (${order.milk})`;
+
+  next('done');
+}
+</script>
+
+</body>
+</html>
