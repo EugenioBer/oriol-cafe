@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Oriol Café - Barista</title>
+
+<style>
+body{
+  margin:0;
+  font-family:Arial;
+  background:#0E0E0E;
+  color:white;
+  padding:20px;
+}
+
+h1{margin-bottom:20px}
+
+.order{
+  background:#171717;
+  padding:15px;
+  margin-bottom:10px;
+  border-radius:10px;
+}
+
+button{
+  margin:5px;
+  padding:6px 10px;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+}
+
+.proceso{background:#444;color:white;}
+.listo{background:#C8A27A;color:black;}
+.entregado{background:#7FB069;color:black;}
+</style>
+</head>
+
+<body>
+
+<h1>☕ Oriol Café</h1>
+<div id="orders">Cargando pedidos...</div>
+
+<script>
+const API = "https://script.google.com/macros/s/AKfycbyklCo_0hj7D-1vBWblwS_zdfCnZbQEXOk__WEOOJ7P12rznjlswbzJSHOrihsrfxG8Bw/exec";
+
+async function loadOrders(){
+  try{
+    const res = await fetch(API);
+    const data = await res.json();
+
+    if(!data.length){
+      document.getElementById("orders").innerHTML = "No hay pedidos aún";
+      return;
+    }
+
+    let html = "";
+
+    data.slice(-20).reverse().forEach(o => {
+      html += `
+        <div class="order">
+          <strong>#${o.id} - ${o.name}</strong><br>
+          ${o.drink} (${o.milk})<br><br>
+
+          Estado: <strong>${o.status || "En proceso"}</strong>
+
+          <button class="proceso" onclick="setStatus(${o.id}, 'En proceso')">Proceso</button>
+          <button class="listo" onclick="setStatus(${o.id}, 'Listo')">Listo</button>
+          <button class="entregado" onclick="setStatus(${o.id}, 'Entregado')">Entregado</button>
+        </div>
+      `;
+    });
+
+    document.getElementById("orders").innerHTML = html;
+
+  }catch(e){
+    document.getElementById("orders").innerHTML = "Error cargando pedidos";
+  }
+}
+
+async function setStatus(id,status){
+  await fetch(API,{
+    method:"POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      action: "update",
+      id: id,
+      status: status
+    })
+  });
+
+  loadOrders();
+}
+
+setInterval(loadOrders, 2000);
+loadOrders();
+</script>
+
+</body>
+</html>
