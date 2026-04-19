@@ -19,6 +19,9 @@ body{
 .container{width:100%;max-width:400px;padding:20px}
 .screen{display:none}
 .active{display:block}
+
+h1,h2{margin-bottom:10px}
+
 button{
   width:100%;
   padding:15px;
@@ -28,7 +31,9 @@ button{
   background:#C8A27A;
   color:black;
   font-weight:bold;
+  cursor:pointer;
 }
+
 .card{
   background:#171717;
   padding:15px;
@@ -36,6 +41,7 @@ button{
   border-radius:10px;
   cursor:pointer;
 }
+
 input{
   width:100%;
   padding:15px;
@@ -43,6 +49,16 @@ input{
   border-radius:10px;
   background:#1a1a1a;
   color:white;
+}
+
+.nav{
+  display:flex;
+  gap:10px;
+}
+
+.loading{
+  opacity:0.5;
+  pointer-events:none;
 }
 </style>
 </head>
@@ -65,37 +81,54 @@ input{
   <div class="card" onclick="selectDrink('Iced Latte')">Iced Latte</div>
   <div class="card" onclick="selectDrink('Cold Brew')">Cold Brew</div>
   <div class="card" onclick="selectDrink('Espresso')">Espresso</div>
+
+  <div class="nav">
+    <button onclick="back('name')">Atrás</button>
+  </div>
 </div>
 
 <!-- LECHE -->
 <div class="screen" id="milk">
   <h2>Tipo de leche</h2>
-  <div class="card" onclick="selectMilk('Entera')">Entera</div>
-  <div class="card" onclick="selectMilk('Deslactosada')">Deslactosada</div>
-  <div class="card" onclick="selectMilk('Deslactosada Light')">Deslactosada Light</div>
-  <div class="card" onclick="selectMilk('Avena')">Avena</div>
-  <div class="card" onclick="selectMilk('Coco')">Coco</div>
+  <div class="card" onclick="sendOrder('Entera')">Entera</div>
+  <div class="card" onclick="sendOrder('Deslactosada')">Deslactosada</div>
+  <div class="card" onclick="sendOrder('Deslactosada Light')">Deslactosada Light</div>
+  <div class="card" onclick="sendOrder('Avena')">Avena</div>
+  <div class="card" onclick="sendOrder('Coco')">Coco</div>
+
+  <div class="nav">
+    <button onclick="back('menu')">Atrás</button>
+  </div>
 </div>
 
 <!-- FINAL -->
 <div class="screen" id="done">
-  <h2>✔ Pedido listo</h2>
+  <h2 id="status">☕ Preparando tu pedido...</h2>
   <p id="summary"></p>
 </div>
 
 </div>
 
 <script>
-let order = {name:"", drink:"", milk:""};
+const API = "https://script.google.com/macros/s/AKfycbyklCo_0hj7D-1vBWblwS_zdfCnZbQEXOk__WEOOJ7P12rznjlswbzJSHOrihsrfxG8Bw/exec";
+
+let order = {};
+let orderId = null;
+let loading = false;
 
 function next(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
 }
 
+function back(id){ next(id); }
+
 function saveName(){
   const name = document.getElementById('username').value;
-  if(!name){alert("Escribe tu nombre");return;}
+  if(!name){
+    alert("Escribe tu nombre");
+    return;
+  }
   order.name = name;
   next('menu');
 }
@@ -105,20 +138,53 @@ function selectDrink(drink){
   next('milk');
 }
 
-async function selectMilk(milk){
+async function sendOrder(milk){
+  if(loading) return;
+  loading = true;
+
+  document.body.classList.add("loading");
+
   order.milk = milk;
 
-  const res = await fetch("https://script.google.com/macros/s/AKfycbx1JAecP-uxlb9NSa-gtZ-3Ns2A4LoowsebK5Hfmpa06HGXlSk0hr3NVucECTVNHXCkIg/exec",{
-    method:"POST",
-    body:JSON.stringify(order)
-  });
+  try{
+    const res = await fetch(API,{
+      method:"POST",
+      body: JSON.stringify(order)
+    });
 
-  const data = await res.json();
+    const data = await res.json();
+    orderId = data.id;
 
-  document.getElementById("summary").innerText =
-    `Pedido #${data.id} - ${order.drink} (${order.milk})`;
+    document.getElementById("summary").innerText =
+      `Pedido #${orderId} - ${order.drink} (${order.milk})`;
 
-  next('done');
+    next('done');
+
+    trackStatus();
+
+  }catch(e){
+    alert("Error enviando pedido");
+    loading = false;
+    document.body.classList.remove("loading");
+  }
+}
+
+function trackStatus(){
+  setInterval(async ()=>{
+    const res = await fetch(API);
+    const data = await res.json();
+
+    const o = data.find(x => x.id == orderId);
+
+    if(o){
+      document.getElementById("status").innerText =
+        o.status === "Listo"
+        ? "✅ Pedido listo"
+        : o.status === "Entregado"
+        ? "🎉 Pedido entregado"
+        : "☕ Preparando tu pedido...";
+    }
+  },2000);
 }
 </script>
 
